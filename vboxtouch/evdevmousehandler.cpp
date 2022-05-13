@@ -40,7 +40,7 @@
 #include "evdevmousehandler.h"
 
 #include <QSocketNotifier>
-#include <QStringList>
+#include <QStringView>
 #include <QPoint>
 #include <QGuiApplication>
 #include <QScreen>
@@ -73,8 +73,8 @@ EvdevMouseHandler *EvdevMouseHandler::create(const QString &device, const QStrin
     int grab = 0;
     bool abs = false;
 
-    const auto args = specification.splitRef(QLatin1Char(':'));
-    for (const QStringRef &arg : args) {
+    const auto args = specification.split(QLatin1Char(':'));
+    for (const QStringView &arg : args) {
         if (arg == QLatin1String("nocompress"))
             compression = false;
         else if (arg.startsWith(QLatin1String("dejitter=")))
