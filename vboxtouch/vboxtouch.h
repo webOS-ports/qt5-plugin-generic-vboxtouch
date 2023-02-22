@@ -27,9 +27,17 @@
 #include <QObject>
 #include <QString>
 #include <QEvent>
+#if (QT_VERSION >= QT_VERSION_CHECK(6,0,0))
+#include <QEventPoint>
+#endif
 
 class QSocketNotifier;
-class QTouchDevice;
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6,0,0))
+    class QPointingDevice;
+#else
+    class QTouchDevice;
+#endif
 
 class EvdevMouseHandler;
 
@@ -48,7 +56,11 @@ private slots:
 private:
     int m_fd;
     QSocketNotifier *m_notifier;
+#if (QT_VERSION >= QT_VERSION_CHECK(6,0,0))
+    QPointingDevice *m_device;
+#else
     QTouchDevice *m_device;
+#endif
     EvdevMouseHandler *m_mouse;
     int m_failures;
 
@@ -56,7 +68,11 @@ private:
     bool m_button;
     int m_x;
     int m_y;
-    void reportTouch(Qt::TouchPointState state);
+    #if (QT_VERSION >= QT_VERSION_CHECK(6,0,0))
+        void reportTouch(QEventPoint::State state);
+    #else
+        void reportTouch(Qt::TouchPointState state);
+    #endif
 };
 
 #endif

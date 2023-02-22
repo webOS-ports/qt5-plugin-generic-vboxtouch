@@ -28,7 +28,11 @@
 #include <QGuiApplication>
 #include <QSocketNotifier>
 #include <QStringList>
-#include <QTouchDevice>
+#if (QT_VERSION >= QT_VERSION_CHECK(6,0,0))
+    #include <QPointingDevice>
+#else
+    #include <QTouchDevice>
+#endif
 #include <QLoggingCategory>
 
 #include <qpa/qwindowsysteminterface.h>
@@ -71,11 +75,21 @@ VirtualboxTouchScreenHandler::VirtualboxTouchScreenHandler(const QString &specif
                 this, SLOT(handleEvdevInput(int, int, bool, Qt::MouseButtons, Qt::MouseButton, QEvent::Type)));
     }
 
-    m_device = new QTouchDevice;
-    m_device->setName("MergedMouseDevices");
-    m_device->setType(QTouchDevice::TouchScreen);
-    m_device->setCapabilities(QTouchDevice::Position);
-    QWindowSystemInterface::registerTouchDevice(m_device);
+    
+    #if (QT_VERSION >= QT_VERSION_CHECK(6,0,0))
+        m_device = new QPointingDevice;
+        m_device->setType(QInputDevice::DeviceType::TouchScreen);
+        m_device->setCapabilities(QInputDevice::Capability::Position);
+        //m_device->setName("MergedMouseDevices");
+        QWindowSystemInterface::registerInputDevice(m_device);
+    #else
+        m_device = new QTouchDevice;
+        m_device->setType(QTouchDevice::TouchScreen);
+        m_device->setCapabilities(QTouchDevice::Position);
+        m_device->setName("MergedMouseDevices");
+        QWindowSystemInterface::registerTouchDevice(m_device);
+    #endif
+
 }
 
 VirtualboxTouchScreenHandler::~VirtualboxTouchScreenHandler()
@@ -107,7 +121,11 @@ void VirtualboxTouchScreenHandler::handleEvdevInput(int x, int y, bool abs, Qt::
         m_x = x;
         m_y = y;
         if (m_button) {
-            reportTouch(Qt::TouchPointMoved);
+            #if (QT_VERSION >= QT_VERSION_CHECK(6,0,0))
+                reportTouch(QEventPoint::Updated);
+            #else    
+                reportTouch(Qt::TouchPointMoved);
+            #endif
         }
     }
     else {
@@ -115,13 +133,20 @@ void VirtualboxTouchScreenHandler::handleEvdevInput(int x, int y, bool abs, Qt::
         bool leftbutton = (buttons & Qt::LeftButton) != 0;
         if (leftbutton != m_button) {
             m_button = leftbutton;
-            
-            reportTouch(m_button ? Qt::TouchPointPressed : Qt::TouchPointReleased);
+            #if (QT_VERSION >= QT_VERSION_CHECK(6,0,0))
+                reportTouch(m_button ? QEventPoint::Pressed : QEventPoint::Released);
+            #else
+                reportTouch(m_button ? Qt::TouchPointPressed : Qt::TouchPointReleased);
+            #endif
         }
     }
 }
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6,0,0))
+void VirtualboxTouchScreenHandler::reportTouch(QEventPoint::State state)
+#else
 void VirtualboxTouchScreenHandler::reportTouch(Qt::TouchPointState state)
+#endif
 {
     QWindowSystemInterface::TouchPoint tp;
 
